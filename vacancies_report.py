@@ -15,6 +15,7 @@ currency_to_rub = {"AZN": 35.68, "BYR": 23.91, "EUR": 59.90, "GEL": 21.74, "KGS"
 
 fileName = input("Введите название файла: ")
 input_vacancy_name = input("Введите название профессии: ")
+output_view = input("Получить данные в виде:(Таблица/Графики) ")
 
 
 class Vacancy(object):
@@ -85,7 +86,7 @@ class InputConnect(object):
                     vac.salary_currency]
                 self.cities_salary[vac.area_name][1] += 1
 
-    def print_statistics(self):
+    def create_output_statistics(self):
         self.dict1 = {a: round(self.year_stat[a][0] / self.year_stat[a][1]) for a in self.year_stat}
         self.dict2 = {a: self.year_stat[a][1] for a in self.year_stat}
         self.dict3 = {a: round(self.vacancy_stat[a][0] / self.vacancy_stat[a][1]) for a in self.vacancy_stat}
@@ -100,6 +101,8 @@ class InputConnect(object):
              self.cities_salary[a][1] / self.count > 0.01}.items(),
             key=lambda item: item[1],
             reverse=True), 10))
+
+    def print_statistics(self):
         print('Динамика уровня зарплат по годам: ', self.dict1)
         print('Динамика количества вакансий по годам: ', self.dict2)
         print('Динамика уровня зарплат по годам для выбранной профессии: ', self.dict3)
@@ -220,9 +223,14 @@ if os.path.getsize(fileName) != 0:
     print_tab.cities_sal()
     print_tab.filtration()
     print_tab.level_year_stat(print_tab.vacancy_stat)
+    print_tab.create_output_statistics()
     print_tab.print_statistics()
-    graph = GraphReport(print_tab.get_statistics())
-    graph.generate_graph()
+    if output_view == 'Таблица':
+        tab = Report(print_tab.get_statistics())
+        tab.generate_excel()
+    elif output_view == 'Графики':
+        graph = GraphReport(print_tab.get_statistics())
+        graph.generate_graph()
 else:
     print('Пустой файл')
 
