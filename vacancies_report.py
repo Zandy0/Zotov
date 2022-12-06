@@ -15,7 +15,7 @@ currency_to_rub = {"AZN": 35.68, "BYR": 23.91, "EUR": 59.90, "GEL": 21.74, "KGS"
 
 fileName = input("Введите название файла: ")
 input_vacancy_name = input("Введите название профессии: ")
-output_view = input("Получить данные в виде:(Таблица/Графики) ")
+output_view = input("Вывести данные в виде:(Таблица/Графики) ")
 
 
 class Vacancy(object):
