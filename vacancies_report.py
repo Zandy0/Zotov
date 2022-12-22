@@ -1,25 +1,38 @@
 import csv
 import os
 import re
-import time
 from itertools import islice
-
 import numpy as np
 import openpyxl
 from matplotlib import pyplot as plt
 from openpyxl.styles import Side, Font, Border, Alignment
 from openpyxl.utils import get_column_letter
 
+"""Словарь для конвертации валют в рубли"""
 currency_to_rub = {"AZN": 35.68, "BYR": 23.91, "EUR": 59.90, "GEL": 21.74, "KGS": 0.76, "KZT": 0.13, "RUR": 1,
                    "UAH": 1.64, "USD": 60.66, "UZS": 0.0055}
 
+"""Принимает название файла в строковом виде данных"""
 fileName = input("Введите название файла: ")
+
+"""Принимает название вакансии в строковом виде данных"""
 input_vacancy_name = input("Введите название профессии: ")
+
+"""Принимает название формата вывода данных"""
 output_view = input("Вывести данные в виде (Таблица/Графики): ")
 
 
 class Vacancy(object):
+    """Класс для зарплат
+    Attributes:
+        name(str): название вакансии
+        salary_from(int): нижняя граница вилки оклада
+        salary_to(int): верхняя граница вилки оклада
+        salary_currency(str): валюта зарплаты
+        area_name(str): место работы
+        published_at(str): дата публикации вакансии"""
     def __init__(self, vacancy_list):
+        """Инициализирует объект Salary, конвертирует значения в нужный тип данных"""
         self.name = vacancy_list[0]
         self.salary_from = float(vacancy_list[1])
         self.salary_to = float(vacancy_list[2])
@@ -28,16 +41,29 @@ class Vacancy(object):
         self.published_at = int(vacancy_list[5][0:4])
 
     def get_list(self):
+        """Возвращает список значений полей
+
+        :return: (list): список значений
+        """
         return [self.name, self.salary_from, self.salary_to, self.salary_currency, self.area_name, self.published_at]
 
 
 class DataSet(object):
+    """Класс для чтения и обработки полученных данных
+
+    Attributes:
+        file_name(str): название файла
+        vacancies_objects(list): список всех полученных вакансий, представленный в виде класса Salary"""
     def __init__(self, filename):
+        """Инициализирует объект класса"""
         self.file_name = filename
         self.vacancies_objects = []
         DataSet.csv1(self)
 
     def csv1(self):
+        """Считывает данные из файла по названию, подготавливает их и заполняет
+        список vacancies_objects
+        """
         file_csv = open(self.file_name, 'r', encoding="utf-8-sig")
         reader_csv = list(csv.reader(file_csv))
         for vacancy in reader_csv[1:]:
@@ -52,7 +78,19 @@ class DataSet(object):
 
 
 class InputConnect(object):
+    """Класс, осуществляющий фильтрацию, сортировку, составление статистики
+
+    Attributes:
+        dict1, dict2, ..., dict6(dict): словари со сформированной статистикой
+        vacancy_name(str): название вакансии, для которой необходимо составить статистику
+        data(DataSet): данные, полученные из файла
+        year_stat(dict): словарь с готовой статистикой по годам
+        vacancy_stat(dict): словарь с готовой статистикой по профессиям
+        cities_salary(dict): словарь с готовой статистикой по городам
+        count(int): количество всех вакансий
+        """
     def __init__(self, vacancy_name):
+        """Инициализирует объект класса"""
         self.dict1, self.dict2, self.dict3, self.dict4, self.dict5, self.dict6 = None, None, None, None, None, None
         self.vacancy_name = vacancy_name.lower()
         self.data = DataSet(fileName)
@@ -62,10 +100,12 @@ class InputConnect(object):
         self.count = len(self.data.vacancies_objects)
 
     def filtration(self):
+        """Осуществляет фильтрацию по конкретной вакансии"""
         self.data.vacancies_objects = [x for x in self.data.vacancies_objects if
                                        self.vacancy_name in x.name.lower()]
 
     def level_year_stat(self, dictionary):
+        """Осуществляет подсчет количества вакансий и среднюю зарплату по годам"""
         for vac in self.data.vacancies_objects:
             if vac.published_at not in dictionary:
                 dictionary[vac.published_at] = [
@@ -77,6 +117,7 @@ class InputConnect(object):
                 dictionary[vac.published_at][1] += 1
 
     def cities_sal(self):
+        """Осуществляет подсчет количества вакансий и среднюю зарплату по городам"""
         for vac in self.data.vacancies_objects:
             if vac.area_name not in self.cities_salary:
                 self.cities_salary[vac.area_name] = [
@@ -87,6 +128,14 @@ class InputConnect(object):
                 self.cities_salary[vac.area_name][1] += 1
 
     def create_output_statistics(self):
+        """Формирует необходимую статистику
+        dict1: динамика уровня зарплат по годам
+        dict2: динамика количества вакансий по годам
+        dict3: динамика уровня зарплат по годам для выбранной профессии
+        dict4: динамика количества вакансий по годам для выбранной профессии
+        dict5: уровень зарплат по городам
+        dict6: доля вакансий по городам"""
+
         self.dict1 = {a: round(self.year_stat[a][0] / self.year_stat[a][1]) for a in self.year_stat}
         self.dict2 = {a: self.year_stat[a][1] for a in self.year_stat}
         self.dict3 = {a: round(self.vacancy_stat[a][0] / self.vacancy_stat[a][1]) for a in self.vacancy_stat}
@@ -103,6 +152,7 @@ class InputConnect(object):
             reverse=True), 10))
 
     def print_statistics(self):
+        """Осуществляет вывод полученной статистики"""
         print('Динамика уровня зарплат по годам: ', self.dict1)
         print('Динамика количества вакансий по годам: ', self.dict2)
         print('Динамика уровня зарплат по годам для выбранной профессии: ', self.dict3)
@@ -111,15 +161,26 @@ class InputConnect(object):
         print('Доля вакансий по городам (в порядке убывания): ', self.dict6)
 
     def get_statistics(self):
+        """Возвращает список значений полей
+
+        :return: (list[list]): список списков статистики
+        """
         return [[self.dict1, self.dict3, self.dict2, self.dict4], [self.dict5, self.dict6]]
 
 
 class Report(object):
+    """Класс формирующий полученную статистику в виде таблиц
+
+    Attributes:
+        statistics_by_countries(list): список списков со статистикой по городам
+        statistics_by_years(list): список списков со статистикой по годам"""
     def __init__(self, dictionary_list):
+        """Инициализирует объект класса"""
         self.statistics_by_countries = dictionary_list[1]
         self.statistics_by_years = dictionary_list[0]
 
     def generate_excel(self):
+        """Формирует таблицу со статистикой"""
         self.wb = openpyxl.Workbook()
         self.sheet1 = self.wb.active
         self.sheet1.title = "Статистика по годам"
@@ -141,6 +202,7 @@ class Report(object):
 
     @staticmethod
     def table_fill(sheets, index, dictionary):
+        """Метод, заполняющий заголовки таблицы"""
         a = 2
         for key, value in dictionary.items():
             if sheets[1][index].value == 'Год' or sheets[1][index].value == 'Город':
@@ -151,6 +213,7 @@ class Report(object):
 
     @staticmethod
     def sheet_format(sheets):
+        """Метод для приведения каждой ячейки в нужный формат"""
         thins = Side(border_style="thin", color="000000")
         for column in sheets.columns:
             max_length = 0
@@ -168,11 +231,18 @@ class Report(object):
 
 
 class GraphReport(object):
+    """Класс формирующий полученную статистику в виде графиков
+
+    Attributes:
+        statistics_by_countries(list): список списков со статистикой по городам
+        statistics_by_years(list): список списков со статистикой по годам"""
     def __init__(self, dictionary_list):
+        """Инициализирует объект класса"""
         self.statistics_by_countries = dictionary_list[1]
         self.statistics_by_years = dictionary_list[0]
 
     def generate_graph(self):
+        """Формирует графики со статистикой"""
         self.y = np.arange(len(self.statistics_by_countries[0].keys()))
         self.x = np.arange(len(self.statistics_by_years[0].keys()))
         self.width = 0.4
@@ -186,6 +256,7 @@ class GraphReport(object):
 
 
     def salary_level_create(self):
+        """Формирует график со статистикой уровня зарплат по годам"""
         self.axs[0, 0].bar(self.x - self.width / 2, self.statistics_by_years[0].values(), self.width, label='средняя з/п')
         self.axs[0, 0].bar(self.x + self.width / 2, self.statistics_by_years[1].values(), self.width, label='з/п программист')
         self.axs[0, 0].set_title('Уровень зарплат по годам', fontsize=14)
@@ -194,6 +265,7 @@ class GraphReport(object):
         self.axs[0, 0].legend(fontsize=8)
 
     def vacancy_count_create(self):
+        """Формирует график со статистикой количества вакансий по годам"""
         self.axs[0, 1].bar(self.x - self.width / 2, self.statistics_by_years[2].values(), self.width, label='количество вакансий')
         self.axs[0, 1].bar(self.x + self.width / 2, self.statistics_by_years[3].values(), self.width, label='количество вакансий программист')
         self.axs[0, 1].set_title('Количество вакансий по годам', fontsize=14)
@@ -202,6 +274,7 @@ class GraphReport(object):
         self.axs[0, 1].legend(fontsize=8, loc='upper left')
 
     def countries_salary_create(self):
+        """Формирует график со статистикой уровня зарплат по городам"""
         self.axs[1, 0].barh(self.y - self.width / 2, self.statistics_by_countries[0].values(), self.width * 2)
         self.axs[1, 0].set_title('Уровень зарплат по городам', fontsize=14)
         self.axs[1, 0].set_yticks(self.y, self.statistics_by_countries[0].keys(), fontsize=8)
@@ -209,6 +282,7 @@ class GraphReport(object):
         self.axs[1, 0].invert_yaxis()
 
     def part_countries_create(self):
+        """Формирует график со статистикой количества вакансий по годам в виде круговой диаграммы"""
         arg = [x * 100 for x in self.statistics_by_countries[1].values()]
         arg.append(100 - sum(arg))
         arg1 = list(self.statistics_by_countries[0].keys())
